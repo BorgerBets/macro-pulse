@@ -47,7 +47,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Modal & UI Fallbacks if CDN is unreachable */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -260,7 +259,7 @@
 
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-        // Close modals on Escape key
+        // Keyboard event for modals
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeSettings();
@@ -338,8 +337,8 @@
 
         /* --- Gemini API Call Wrapper --- */
         async function callGeminiApi(prompt, base64Image = null, mimeType = "image/jpeg") {
-            const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
-            let lastError = null;
+            const models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+            let errorLog = [];
 
             for (const model of models) {
                 try {
@@ -360,15 +359,15 @@
                     });
 
                     const data = await res.json();
-                    if (data.error) throw new Error(data.error.message || `API error on ${model}`);
+                    if (data.error) throw new Error(`[${model}] ${data.error.message}`);
 
                     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                        throw new Error("No response returned from model.");
+                        throw new Error(`[${model}] No content returned from API.`);
                     }
 
                     let rawText = data.candidates[0].content.parts[0].text;
                     
-                    // Robust JSON extraction matching arrays or objects
+                    // JSON extraction matcher
                     const jsonMatch = rawText.match(/[\{\[][\s\S]*[\}\]]/);
                     if (jsonMatch) {
                         rawText = jsonMatch[0];
@@ -376,12 +375,12 @@
 
                     return JSON.parse(rawText);
                 } catch (err) {
-                    console.warn(`Model ${model} request error:`, err.message);
-                    lastError = err;
+                    console.warn(`Model ${model} failed:`, err.message);
+                    errorLog.push(err.message);
                 }
             }
 
-            throw new Error(lastError ? lastError.message : "Failed to query Gemini API. Check your API key in Settings.");
+            throw new Error(`API Call Failed. Details: ${errorLog.join(' | ')}`);
         }
 
         /* --- Food Search Feature --- */
