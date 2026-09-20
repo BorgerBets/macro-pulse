@@ -7,30 +7,51 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#09090b">
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #09090b;
             color: #f4f4f5;
             -webkit-tap-highlight-color: transparent;
+            padding: 16px 16px 96px 16px;
+            max-width: 440px;
+            margin: 0 auto;
+            min-height: 100vh;
         }
         .glass {
-            background: rgba(24, 24, 27, 0.8);
+            background: rgba(24, 24, 27, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 16px;
+        }
+        .svg-ring-container {
+            position: relative;
+            width: 128px;
+            height: 128px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .svg-ring-container svg {
+            width: 128px;
+            height: 128px;
+            transform: rotate(-90deg);
         }
         .progress-ring { transition: stroke-dashoffset 0.5s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="pb-24 pt-4 px-4 min-h-screen flex flex-col justify-between max-w-md mx-auto">
+<body class="space-y-4">
 
     <!-- Header -->
-    <header class="flex justify-between items-center mb-5 pt-2">
+    <header class="flex justify-between items-center pt-2">
         <div>
             <h1 class="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">MacroPulse AI</h1>
             <p class="text-xs text-zinc-400" id="current-date">Today</p>
@@ -41,7 +62,7 @@
     </header>
 
     <!-- Daily Progress Summary Card -->
-    <section class="glass rounded-3xl p-5 mb-4 shadow-xl">
+    <section class="glass shadow-xl">
         <div class="flex justify-between items-center mb-4">
             <span class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Daily Summary</span>
             <span class="text-xs text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/50" id="cal-remaining">0 kcal left</span>
@@ -49,10 +70,10 @@
 
         <!-- Calories Circular Progress -->
         <div class="flex items-center justify-around mb-6">
-            <div class="relative w-32 h-32 flex items-center justify-center">
-                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <path class="text-zinc-800" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path id="cal-ring" class="text-emerald-500 progress-ring" stroke-dasharray="100, 100" stroke-dashoffset="100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <div class="svg-ring-container">
+                <svg width="128" height="128" viewBox="0 0 36 36">
+                    <path stroke="#27272a" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path id="cal-ring" stroke="#10b981" class="progress-ring" stroke-dasharray="100, 100" stroke-dashoffset="100" stroke-width="3.5" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                 </svg>
                 <div class="absolute text-center">
                     <span class="text-2xl font-extrabold" id="cal-consumed">0</span>
@@ -62,7 +83,7 @@
         </div>
 
         <!-- Macros Breakdown Bars -->
-        <div class="grid grid-cols-3 gap-3 pt-2 border-t border-zinc-800">
+        <div class="grid grid-cols-3 gap-3 pt-3 border-t border-zinc-800">
             <!-- Protein -->
             <div>
                 <div class="flex justify-between text-xs mb-1">
@@ -97,12 +118,12 @@
     </section>
 
     <!-- Food Search Bar Section -->
-    <section class="glass rounded-2xl p-4 mb-4">
+    <section class="glass">
         <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Search Food & Meals</label>
         <form onsubmit="handleSearchSubmit(event)" class="relative flex items-center gap-2">
             <div class="relative w-full">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
-                <input type="text" id="food-search-input" placeholder="e.g. skim milk iced latte, 10% beef mince 200g..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
+                <input type="text" id="food-search-input" placeholder="e.g. skim milk iced latte, 200g beef mince..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
             </div>
             <button type="submit" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shrink-0">
                 Search
@@ -118,48 +139,48 @@
     </section>
 
     <!-- AI Tools Section -->
-    <section class="space-y-3 mb-5">
+    <section class="space-y-3">
         <!-- Scan / Camera Action -->
-        <div class="glass rounded-2xl p-4 flex items-center justify-between">
+        <div class="glass flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-lg shadow-lg">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-base shadow-lg shrink-0">
                     <i class="fa-solid fa-camera"></i>
                 </div>
                 <div>
-                    <h2 class="text-sm font-bold">Log Food with Photo</h2>
-                    <p class="text-xs text-zinc-400">Snap a photo + add details</p>
+                    <h2 class="text-xs font-bold">Log Food with Photo</h2>
+                    <p class="text-[10px] text-zinc-400">Snap a photo + add details</p>
                 </div>
             </div>
-            <button onclick="triggerFileInput()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg">
+            <button onclick="triggerFileInput()" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shrink-0">
                 Scan Meal
             </button>
             <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
         </div>
 
         <!-- AI Meal Recommender Button -->
-        <div class="glass rounded-2xl p-4 flex items-center justify-between">
+        <div class="glass flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-lg">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-base shadow-lg shrink-0">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </div>
                 <div>
-                    <h2 class="text-sm font-bold">AI Meal Recommender</h2>
-                    <p class="text-xs text-zinc-400">Get ideas for remaining macros</p>
+                    <h2 class="text-xs font-bold">AI Meal Recommender</h2>
+                    <p class="text-[10px] text-zinc-400">Get ideas for remaining macros</p>
                 </div>
             </div>
-            <button onclick="generateMealIdeas()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition shadow-lg">
+            <button onclick="generateMealIdeas()" class="px-3.5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition shadow-lg shrink-0">
                 Suggest
             </button>
         </div>
     </section>
 
     <!-- Logged Meals Timeline -->
-    <section class="glass rounded-3xl p-5 mb-6 flex-1">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-zinc-400">Today's Timeline</h3>
+    <section class="glass">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Today's Timeline</h3>
             <button onclick="clearTodayLog()" class="text-xs text-zinc-500 hover:text-rose-400 transition">Reset Log</button>
         </div>
-        <div id="meal-timeline" class="space-y-3">
+        <div id="meal-timeline" class="space-y-2.5">
             <p class="text-xs text-zinc-500 text-center py-6">No meals logged yet today. Search or scan to start!</p>
         </div>
     </section>
@@ -286,16 +307,9 @@
             `).join('');
         }
 
-        /* --- Gemini API Call Wrapper with Markdown Stripping & Valid Model Endpoints --- */
+        /* --- Gemini API Call Wrapper --- */
         async function callGeminiApi(prompt, base64Image = null) {
-            // Strictly active and valid Flash endpoints
-            const models = [
-                'gemini-3.8-flash',
-                'gemini-3.6-flash',
-                'gemini-3.5-flash',
-                'gemini-2.5-flash'
-            ];
-
+            const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
             let lastError = null;
 
             for (const model of models) {
@@ -307,7 +321,7 @@
                         });
                     }
 
-                    const res = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){model}:generateContent?key=${settings.apiKey}`, {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -320,12 +334,10 @@
                     if (data.error) throw new Error(data.error.message || `API error on ${model}`);
 
                     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                        throw new Error("No response candidates returned.");
+                        throw new Error("No response returned from model.");
                     }
 
                     let rawText = data.candidates[0].content.parts[0].text;
-
-                    // Clean markdown code fence blocks if returned by the API
                     rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
                     return JSON.parse(rawText);
@@ -335,10 +347,10 @@
                 }
             }
 
-            throw new Error(lastError ? lastError.message : "Failed to query Gemini API. Please verify your API key in Settings.");
+            throw new Error(lastError ? lastError.message : "Failed to query Gemini API. Check your API key in Settings.");
         }
 
-        /* --- Food & Meal Search Feature --- */
+        /* --- Food Search Feature --- */
         function handleSearchSubmit(e) {
             e.preventDefault();
             const query = document.getElementById('food-search-input').value;
@@ -385,7 +397,7 @@
             try {
                 const data = await callGeminiApi(prompt);
                 if (!data || !data.results || data.results.length === 0) {
-                    openAiModal('No Results', '<p class="text-xs text-zinc-400 py-4 text-center">No nutritional data found for this item. Try a different search term.</p>');
+                    openAiModal('No Results', '<p class="text-xs text-zinc-400 py-4 text-center">No nutritional data found for this item.</p>');
                     return;
                 }
 
@@ -436,7 +448,7 @@
             }
         }
 
-        /* --- Photo Scanning Feature with Extra Context Notes --- */
+        /* --- Photo Scanning Feature --- */
         function triggerFileInput() {
             if (!settings.apiKey) {
                 alert('Please enter your Gemini API key in Settings first!');
@@ -462,8 +474,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-zinc-300 mb-1">Additional Details (Optional)</label>
-                            <input type="text" id="scan-notes-input" placeholder="e.g. skim milk, sourdough bread, cooked in butter..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
-                            <p class="text-[10px] text-zinc-500 mt-1">Specify hidden details like milk type, oils, bread, or exact weights.</p>
+                            <input type="text" id="scan-notes-input" placeholder="e.g. skim milk, sourdough, cooked in butter..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
                         </div>
                         <button onclick="processImageWithNotes()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs shadow-lg transition">
                             Analyze Meal
@@ -494,7 +505,7 @@
                 }`;
 
                 if (notes) {
-                    prompt += `\n\nUSER SPECIFIED DETAILS TO INCLUDE: "${notes}". Make sure calorie and macronutrient calculations accurately reflect these context notes.`;
+                    prompt += `\n\nUSER SPECIFIED DETAILS TO INCLUDE: "${notes}".`;
                 }
 
                 const result = await callGeminiApi(prompt, base64Data);
@@ -563,7 +574,7 @@
                 f: Math.max(0, settings.f - consumed.f)
             };
 
-            openAiModal('Generating Suggestions...', '<div class="text-center py-8"><i class="fa-solid fa-wand-magic-sparkles fa-spin text-2xl text-indigo-400"></i><p class="text-xs text-zinc-400 mt-2">Calculating meals to fit your exact remaining macros...</p></div>');
+            openAiModal('Generating Suggestions...', '<div class="text-center py-8"><i class="fa-solid fa-wand-magic-sparkles fa-spin text-2xl text-indigo-400"></i><p class="text-xs text-zinc-400 mt-2">Calculating meals for remaining macros...</p></div>');
 
             const prompt = `Suggest 2 realistic meal options to fit these remaining daily macros: Calories: ${rem.cal}, Protein: ${rem.p}g, Carbs: ${rem.c}g, Fat: ${rem.f}g.
             Return strictly valid JSON using format:
@@ -608,7 +619,7 @@
             }
         }
 
-        /* --- Helper & Utility Functions --- */
+        /* --- Helper Functions --- */
         function deleteMeal(index) {
             meals.splice(index, 1);
             localStorage.setItem('mp_meals', JSON.stringify(meals));
@@ -667,7 +678,6 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Run application initialization
         initApp();
     </script>
 </body>
