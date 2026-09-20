@@ -46,6 +46,20 @@
         .progress-ring { transition: stroke-dashoffset 0.5s ease-in-out; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Modal & UI Fallbacks if CDN is unreachable */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 50;
+        }
+        .modal-overlay.hidden { display: none !important; }
     </style>
 </head>
 <body class="space-y-4">
@@ -77,7 +91,7 @@
                 </svg>
                 <div class="absolute text-center">
                     <span class="text-2xl font-extrabold" id="cal-consumed">0</span>
-                    <span class="block text-[10px] uppercase text-zinc-400 font-medium">/ <span id="cal-target">2000</span> kcal</span>
+                    <span class="block text-[10px] uppercase text-zinc-400 font-medium">/ <span id="cal-target">2200</span> kcal</span>
                 </div>
             </div>
         </div>
@@ -88,7 +102,7 @@
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="text-zinc-400 font-medium">Protein</span>
-                    <span class="font-semibold text-rose-400"><span id="p-val">0</span>/<span id="p-target">150</span>g</span>
+                    <span class="font-semibold text-rose-400"><span id="p-val">0</span>/<span id="p-target">160</span>g</span>
                 </div>
                 <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                     <div id="p-bar" class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -98,7 +112,7 @@
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="text-zinc-400 font-medium">Carbs</span>
-                    <span class="font-semibold text-amber-400"><span id="c-val">0</span>/<span id="c-target">200</span>g</span>
+                    <span class="font-semibold text-amber-400"><span id="c-val">0</span>/<span id="c-target">220</span>g</span>
                 </div>
                 <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                     <div id="c-bar" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -108,7 +122,7 @@
             <div>
                 <div class="flex justify-between text-xs mb-1">
                     <span class="text-zinc-400 font-medium">Fat</span>
-                    <span class="font-semibold text-sky-400"><span id="f-val">0</span>/<span id="f-target">65</span>g</span>
+                    <span class="font-semibold text-sky-400"><span id="f-val">0</span>/<span id="f-target">70</span>g</span>
                 </div>
                 <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                     <div id="f-bar" class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
@@ -186,8 +200,8 @@
     </section>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4">
+    <div id="settings-modal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'settings-modal')">
+        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-base font-bold">App Settings</h3>
                 <button onclick="closeSettings()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -225,8 +239,8 @@
     </div>
 
     <!-- AI Output / Dynamic Modal -->
-    <div id="ai-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4 max-h-[85vh] overflow-y-auto">
+    <div id="ai-modal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'ai-modal')">
+        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4 max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-base font-bold" id="ai-modal-title">AI Output</h3>
                 <button onclick="closeAiModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -245,6 +259,21 @@
         let meals = JSON.parse(localStorage.getItem('mp_meals')) || [];
 
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        // Close modals on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettings();
+                closeAiModal();
+            }
+        });
+
+        function handleOverlayClick(event, modalId) {
+            if (event.target.id === modalId) {
+                if (modalId === 'settings-modal') closeSettings();
+                if (modalId === 'ai-modal') closeAiModal();
+            }
+        }
 
         function initApp() {
             updateDashboard();
@@ -308,8 +337,8 @@
         }
 
         /* --- Gemini API Call Wrapper --- */
-        async function callGeminiApi(prompt, base64Image = null) {
-            const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+        async function callGeminiApi(prompt, base64Image = null, mimeType = "image/jpeg") {
+            const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
             let lastError = null;
 
             for (const model of models) {
@@ -317,7 +346,7 @@
                     const parts = [{ text: prompt }];
                     if (base64Image) {
                         parts.push({
-                            inline_data: { mime_type: "image/jpeg", data: base64Image }
+                            inline_data: { mime_type: mimeType, data: base64Image }
                         });
                     }
 
@@ -338,7 +367,12 @@
                     }
 
                     let rawText = data.candidates[0].content.parts[0].text;
-                    rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+                    
+                    // Robust JSON extraction matching arrays or objects
+                    const jsonMatch = rawText.match(/[\{\[][\s\S]*[\}\]]/);
+                    if (jsonMatch) {
+                        rawText = jsonMatch[0];
+                    }
 
                     return JSON.parse(rawText);
                 } catch (err) {
@@ -464,8 +498,10 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                window.pendingImageBase64 = e.target.result.split(',')[1];
-                window.pendingImagePreview = e.target.result;
+                const fullDataUrl = e.target.result;
+                window.pendingImageBase64 = fullDataUrl.split(',')[1];
+                window.pendingMimeType = fullDataUrl.split(';')[0].replace('data:', '') || 'image/jpeg';
+                window.pendingImagePreview = fullDataUrl;
 
                 openAiModal('Add Photo Context', `
                     <div class="space-y-3">
@@ -489,6 +525,7 @@
         async function processImageWithNotes() {
             const notes = document.getElementById('scan-notes-input') ? document.getElementById('scan-notes-input').value.trim() : '';
             const base64Data = window.pendingImageBase64;
+            const mimeType = window.pendingMimeType || 'image/jpeg';
             if (!base64Data) return;
 
             openAiModal('Analyzing Meal...', '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i><p class="text-xs text-zinc-400 mt-2">Gemini Vision is estimating macros...</p></div>');
@@ -508,7 +545,7 @@
                     prompt += `\n\nUSER SPECIFIED DETAILS TO INCLUDE: "${notes}".`;
                 }
 
-                const result = await callGeminiApi(prompt, base64Data);
+                const result = await callGeminiApi(prompt, base64Data, mimeType);
                 showScanResults(result);
             } catch (err) {
                 openAiModal('Error', `<p class="text-xs text-rose-400">${escapeHtml(err.message || 'Failed to analyze image.')}</p>`);
@@ -649,10 +686,10 @@
 
         function saveSettings() {
             settings.apiKey = document.getElementById('api-key-input').value.trim();
-            settings.cal = parseInt(document.getElementById('target-cal').value) || 2000;
-            settings.p = parseInt(document.getElementById('target-p').value) || 150;
-            settings.c = parseInt(document.getElementById('target-c').value) || 200;
-            settings.f = parseInt(document.getElementById('target-f').value) || 65;
+            settings.cal = parseInt(document.getElementById('target-cal').value) || 2200;
+            settings.p = parseInt(document.getElementById('target-p').value) || 160;
+            settings.c = parseInt(document.getElementById('target-c').value) || 220;
+            settings.f = parseInt(document.getElementById('target-f').value) || 70;
             localStorage.setItem('mp_settings', JSON.stringify(settings));
             closeSettings();
             initApp();
