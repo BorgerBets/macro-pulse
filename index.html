@@ -288,10 +288,11 @@
 
         /* --- Gemini API Call Wrapper with Automatic Model Fallback --- */
         async function callGeminiApi(prompt, base64Image = null) {
+            // Models list updated to prioritize gemini-3.6-flash and active models
             const models = [
+                'gemini-3.6-flash',
                 'gemini-2.5-flash',
-                'gemini-1.5-flash',
-                'gemini-2.0-flash'
+                'gemini-1.5-flash'
             ];
 
             let lastError = null;
@@ -623,6 +624,7 @@
         }
 
         function closeSettings() {
+            document.getElementById('settings-modal').classList.hidden = true;
             document.getElementById('settings-modal').classList.add('hidden');
         }
 
