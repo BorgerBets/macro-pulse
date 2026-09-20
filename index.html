@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#09090b">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)" rel="stylesheet">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -286,13 +286,14 @@
             `).join('');
         }
 
-        /* --- Gemini API Call Wrapper with Automatic Model Fallback --- */
+        /* --- Gemini API Call Wrapper with Markdown Stripping & Valid Model Endpoints --- */
         async function callGeminiApi(prompt, base64Image = null) {
-            // Models list updated to prioritize gemini-3.6-flash and active models
+            // Strictly active and valid Flash endpoints
             const models = [
+                'gemini-3.8-flash',
                 'gemini-3.6-flash',
-                'gemini-2.5-flash',
-                'gemini-1.5-flash'
+                'gemini-3.5-flash',
+                'gemini-2.5-flash'
             ];
 
             let lastError = null;
@@ -306,7 +307,7 @@
                         });
                     }
 
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`, {
+                    const res = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){model}:generateContent?key=${settings.apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -316,17 +317,25 @@
                     });
 
                     const data = await res.json();
-                    if (data.error) throw new Error(data.error.message);
+                    if (data.error) throw new Error(data.error.message || `API error on ${model}`);
 
-                    const rawText = data.candidates[0].content.parts[0].text;
+                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                        throw new Error("No response candidates returned.");
+                    }
+
+                    let rawText = data.candidates[0].content.parts[0].text;
+
+                    // Clean markdown code fence blocks if returned by the API
+                    rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
                     return JSON.parse(rawText);
                 } catch (err) {
-                    console.warn(`Model ${model} call failed:`, err.message);
+                    console.warn(`Model ${model} request error:`, err.message);
                     lastError = err;
                 }
             }
 
-            throw lastError || new Error("All model requests failed. Please check your API key.");
+            throw new Error(lastError ? lastError.message : "Failed to query Gemini API. Please verify your API key in Settings.");
         }
 
         /* --- Food & Meal Search Feature --- */
@@ -356,27 +365,27 @@
                 </div>
             `);
 
-            const prompt = `Provide accurate nutritional database values for the food query: "${query}".
-            Return 2-3 accurate serving variations or common options.
-            Output strictly valid JSON with this format:
+            const prompt = `You are a strict nutritional calculation API. Provide accurate nutritional values for: "${query}".
+            Return 2 to 3 accurate serving variations or common serving sizes.
+            Respond strictly in valid JSON using this exact structure:
             {
               "results": [
                 {
-                  "name": "Specific Food Name",
-                  "serving": "e.g. 1 cup (350ml) or 200g cooked",
+                  "name": "Food or Meal Item Name",
+                  "serving": "e.g. 1 cup (250ml) or 200g cooked",
                   "cal": 250,
                   "p": 30,
                   "c": 5,
                   "f": 12,
-                  "description": "Short details (e.g. 10% fat grass-fed beef, cooked)"
+                  "description": "Brief description of preparation/portion"
                 }
               ]
             }`;
 
             try {
                 const data = await callGeminiApi(prompt);
-                if (!data.results || data.results.length === 0) {
-                    openAiModal('No Results', '<p class="text-xs text-zinc-400 py-4 text-center">No nutritional data found for this item. Try a different search.</p>');
+                if (!data || !data.results || data.results.length === 0) {
+                    openAiModal('No Results', '<p class="text-xs text-zinc-400 py-4 text-center">No nutritional data found for this item. Try a different search term.</p>');
                     return;
                 }
 
@@ -446,7 +455,6 @@
                 window.pendingImageBase64 = e.target.result.split(',')[1];
                 window.pendingImagePreview = e.target.result;
 
-                // Show modal allowing optional context notes before calling AI
                 openAiModal('Add Photo Context', `
                     <div class="space-y-3">
                         <div class="w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 flex items-center justify-center">
@@ -464,7 +472,7 @@
                 `);
             };
             reader.readAsDataURL(file);
-            event.target.value = ''; // Reset file input
+            event.target.value = '';
         }
 
         async function processImageWithNotes() {
@@ -475,7 +483,7 @@
             openAiModal('Analyzing Meal...', '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i><p class="text-xs text-zinc-400 mt-2">Gemini Vision is estimating macros...</p></div>');
 
             try {
-                let prompt = `Analyze this meal photo. Output strictly valid JSON matching this exact structure with no markdown or formatting outside JSON:
+                let prompt = `Analyze this meal photo. Output strictly valid JSON matching this exact structure:
                 {
                   "name": "Brief Meal Name",
                   "cal": 500,
@@ -486,7 +494,7 @@
                 }`;
 
                 if (notes) {
-                    prompt += `\n\nIMPORTANT USER CONTEXT TO INCORPORATE: "${notes}". Ensure the macronutrient and calorie calculations accurately factor in these user-provided details (e.g. specific milk type, bread type, fat content, cooking oil/butter, or specific weight).`;
+                    prompt += `\n\nUSER SPECIFIED DETAILS TO INCLUDE: "${notes}". Make sure calorie and macronutrient calculations accurately reflect these context notes.`;
                 }
 
                 const result = await callGeminiApi(prompt, base64Data);
@@ -557,7 +565,8 @@
 
             openAiModal('Generating Suggestions...', '<div class="text-center py-8"><i class="fa-solid fa-wand-magic-sparkles fa-spin text-2xl text-indigo-400"></i><p class="text-xs text-zinc-400 mt-2">Calculating meals to fit your exact remaining macros...</p></div>');
 
-            const prompt = `Suggest 2 realistic meal options to fit these remaining daily macros: Calories: ${rem.cal}, Protein: ${rem.p}g, Carbs: ${rem.c}g, Fat: ${rem.f}g. Return strictly JSON matching format:
+            const prompt = `Suggest 2 realistic meal options to fit these remaining daily macros: Calories: ${rem.cal}, Protein: ${rem.p}g, Carbs: ${rem.c}g, Fat: ${rem.f}g.
+            Return strictly valid JSON using format:
             {
               "suggestions": [
                 { "name": "Meal Name", "cal": 400, "p": 30, "c": 40, "f": 10, "prep": "10 mins", "ingredients": "Item 1, Item 2" }
@@ -624,7 +633,6 @@
         }
 
         function closeSettings() {
-            document.getElementById('settings-modal').classList.hidden = true;
             document.getElementById('settings-modal').classList.add('hidden');
         }
 
@@ -659,7 +667,7 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Run application
+        // Run application initialization
         initApp();
     </script>
 </body>
