@@ -45,7 +45,7 @@
     input, select, button { font-size: 0.9rem; }
     input[type="text"], input[type="number"], select { background: var(--btn-bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; flex: 1; }
     .btn-primary { background: var(--accent); color: #000; font-weight: 600; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
-    .btn-sec { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+    .btn-sec { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
 
     /* Meal Sections */
     .meal-section { margin-top: 12px; }
@@ -61,9 +61,9 @@
     /* Weight Log Widget */
     .weight-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 
-    /* Modal */
+    /* Modals */
     .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card); padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid var(--border); }
+    .modal-content { background: var(--card); padding: 20px; border-radius: 12px; max-width: 440px; width: 90%; border: 1px solid var(--border); max-height: 80vh; overflow-y: auto; }
     
     .loading-overlay { display: none; color: var(--accent); font-weight: bold; text-align: center; margin-top: 8px; font-size: 0.85rem; }
   </style>
@@ -117,23 +117,24 @@
     </div>
   </div>
 
-  <!-- AI Text & Photo Scan Inputs -->
+  <!-- AI Text, Photo Scan & Meal Suggestion Inputs -->
   <div class="card">
     <div class="input-group">
       <input type="text" id="aiInput" placeholder="AI Log: '2 eggs and 100g oats for breakfast'">
       <button class="btn-primary" onclick="parseAILog()">Log</button>
     </div>
-    <div style="display: flex; gap: 8px; margin-top: 8px;">
-      <button class="btn-sec" style="flex:1;" onclick="triggerPhotoUpload()">📷 Photo Scan</button>
-      <button class="btn-sec" style="flex:1;" onclick="openManualAdd()">+ Manual</button>
-      <button class="btn-sec" style="flex:1;" onclick="copyYesterday()">📋 Copy Prev</button>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+      <button class="btn-sec" onclick="triggerPhotoUpload()">📷 Photo Scan</button>
+      <button class="btn-sec" onclick="suggestMeal()">💡 Suggest Meal</button>
+      <button class="btn-sec" onclick="openManualAdd()">+ Manual Add</button>
+      <button class="btn-sec" onclick="copyYesterday()">📋 Copy Prev</button>
     </div>
-    <!-- Hidden input triggering native camera or gallery picker -->
+    <!-- Hidden input for photo upload -->
     <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event)">
-    <div id="aiStatus" class="loading-overlay">Analyzing meal with Gemini AI...</div>
+    <div id="aiStatus" class="loading-overlay">Working with Gemini AI...</div>
   </div>
 
-  <!-- Weight & Trend Widget -->
+  <!-- Weight Tracker -->
   <div class="card weight-row">
     <div>
       <span style="font-weight: 600;">Body Weight</span>
@@ -142,9 +143,21 @@
     <button class="btn-sec" onclick="logWeight()">Log Weight</button>
   </div>
 
-  <!-- Meal Groups -->
+  <!-- Meal Groups Container -->
   <div class="card" id="mealLogsContainer">
-    <!-- Populated by JS -->
+    <!-- Populated dynamically -->
+  </div>
+
+  <!-- AI Meal Suggestions Modal -->
+  <div id="suggestionModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 12px; color: var(--accent);">💡 AI Meal Suggestions</h3>
+      <p id="remainingMacrosSummary" style="font-size: 0.85rem; color: var(--subtext); margin-bottom: 12px;"></p>
+      <div id="suggestionContent" style="font-size: 0.9rem; line-height: 1.5; color: var(--text);"></div>
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="btn-sec" onclick="closeModal('suggestionModal')">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- Manual Add Modal -->
@@ -179,7 +192,7 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h3 style="margin-bottom: 12px;">Settings & Macro Targets</h3>
-      <label class="label">Gemini API Key (for AI & Photo Scanning)</label>
+      <label class="label">Gemini API Key</label>
       <input type="text" id="cfgApiKey" placeholder="AIZASy..." style="width:100%; margin-bottom: 12px;">
       
       <label class="label">Target Calories / Protein (g)</label>
@@ -231,7 +244,7 @@
       return store.logs[dateStr];
     }
 
-    // UI Rendering
+    // App Rendering
     function renderApp() {
       const today = getTodayStr();
       const dayData = getDayLog(activeDate);
@@ -324,7 +337,7 @@
       }
     }
 
-    // Food Logging Logic
+    // Food Management
     function addItem(meal, name, cal, p, c, f) {
       const dayData = getDayLog(activeDate);
       if (!dayData.items[meal]) dayData.items[meal] = [];
@@ -412,19 +425,19 @@
       renderApp();
     }
 
-    function setStatus(show, msg = "Analyzing meal with Gemini AI...") {
+    function setStatus(show, msg = "Working with Gemini AI...") {
       const el = document.getElementById('aiStatus');
       el.textContent = msg;
       el.style.display = show ? 'block' : 'none';
     }
 
-    // Gemini AI Text Parsing
+    // Gemini AI: Natural Language Logging
     async function parseAILog() {
       const query = document.getElementById('aiInput').value.trim();
       if (!query) return;
 
       if (!store.apiKey) {
-        alert("Please set your Gemini API Key in Settings to use AI features.");
+        alert("Please set your Gemini API Key in Settings.");
         openSettings();
         return;
       }
@@ -453,10 +466,10 @@
       }
     }
 
-    // Gemini AI Multimodal Photo Scanning
+    // Gemini AI: Multimodal Photo Scan
     function triggerPhotoUpload() {
       if (!store.apiKey) {
-        alert("Please set your Gemini API Key in Settings to use Photo Scan.");
+        alert("Please set your Gemini API Key in Settings.");
         openSettings();
         return;
       }
@@ -497,7 +510,7 @@
 
           addItem(parsed.meal || 'snacks', parsed.name || "Scanned Meal", parsed.cal, parsed.p, parsed.c, parsed.f);
         } catch (err) {
-          alert("Failed to analyze image with AI. Check your API key or image format.");
+          alert("Failed to analyze image with AI. Check your API key.");
         } finally {
           setStatus(false);
           event.target.value = '';
@@ -506,7 +519,62 @@
       reader.readAsDataURL(file);
     }
 
-    // Auto-refresh when returning to tab
+    // Gemini AI: Meal Suggestions Based on Remaining Targets
+    async function suggestMeal() {
+      if (!store.apiKey) {
+        alert("Please set your Gemini API Key in Settings.");
+        openSettings();
+        return;
+      }
+
+      const dayData = getDayLog(activeDate);
+      let totals = { cal: 0, p: 0, c: 0, f: 0 };
+      MEALS.forEach(m => {
+        (dayData.items[m] || []).forEach(i => {
+          totals.cal += Number(i.cal || 0);
+          totals.p += Number(i.p || 0);
+          totals.c += Number(i.c || 0);
+          totals.f += Number(i.f || 0);
+        });
+      });
+
+      const remCal = Math.max(0, store.targets.cal - totals.cal);
+      const remP = Math.max(0, store.targets.p - totals.p);
+      const remC = Math.max(0, store.targets.c - totals.c);
+      const remF = Math.max(0, store.targets.f - totals.f);
+
+      if (remCal <= 0) {
+        alert("You have reached or exceeded your calorie target for this day!");
+        return;
+      }
+
+      setStatus(true, "Calculating remaining targets & asking Gemini AI...");
+
+      document.getElementById('remainingMacrosSummary').textContent = 
+        `Remaining for ${activeDate}: ${Math.round(remCal)} kcal | ${Math.round(remP)}g Protein | ${Math.round(remC)}g Carbs | ${Math.round(remF)}g Fat`;
+
+      const prompt = `I have ${Math.round(remCal)} kcal, ${Math.round(remP)}g protein, ${Math.round(remC)}g carbs, and ${Math.round(remF)}g fat remaining for today. Suggest 2 to 3 quick, practical meal or snack ideas that fit within these remaining macros. Focus on simple, high-yield ingredients. Format as bullet points with approximate macros for each suggestion.`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${store.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const data = await res.json();
+        const suggestionText = data.candidates[0].content.parts[0].text;
+
+        document.getElementById('suggestionContent').innerHTML = suggestionText.replace(/\n/g, '<br>');
+        document.getElementById('suggestionModal').style.display = 'flex';
+      } catch (err) {
+        alert("Failed to fetch meal suggestions. Check your API key.");
+      } finally {
+        setStatus(false);
+      }
+    }
+
+    // Auto-refresh on app focus
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         renderApp();
