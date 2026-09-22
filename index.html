@@ -1,720 +1,459 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MacroPulse AI</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#09090b">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #09090b;
-            color: #f4f4f5;
-            -webkit-tap-highlight-color: transparent;
-            padding: 16px 16px 96px 16px;
-            max-width: 440px;
-            margin: 0 auto;
-            min-height: 100vh;
-        }
-        .glass {
-            background: rgba(24, 24, 27, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 16px;
-        }
-        .svg-ring-container {
-            position: relative;
-            width: 128px;
-            height: 128px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .svg-ring-container svg {
-            width: 128px;
-            height: 128px;
-            transform: rotate(-90deg);
-        }
-        .progress-ring { transition: stroke-dashoffset 0.5s ease-in-out; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.82);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            z-index: 50;
-        }
-        .modal-overlay.hidden { display: none !important; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MacroPulse AI</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --text: #f0f6fc;
+      --subtext: #8b949e;
+      --accent: #3fb950;
+      --protein: #ff7b72;
+      --carbs: #79c0ff;
+      --fat: #d2a8ff;
+      --btn-bg: #21262d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 16px; max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    h1 { font-size: 1.4rem; font-weight: 700; background: linear-gradient(90deg, #3fb950, #79c0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    
+    /* Date Nav */
+    .date-nav { display: flex; justify-content: space-between; align-items: center; }
+    .date-nav button { background: var(--btn-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+    .date-nav h2 { font-size: 1.1rem; cursor: pointer; }
+
+    /* Target Bars */
+    .macro-overview { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; text-align: center; margin-top: 12px; }
+    .macro-box { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 8px; }
+    .macro-box .val { font-size: 1.1rem; font-weight: bold; }
+    .macro-box .label { font-size: 0.75rem; color: var(--subtext); }
+
+    .progress-bar-bg { background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .progress-bar-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+
+    /* AI & Quick Add Inputs */
+    .input-group { display: flex; gap: 8px; margin-bottom: 8px; }
+    input, select, button { font-size: 0.9rem; }
+    input[type="text"], input[type="number"], select { background: var(--btn-bg); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; flex: 1; }
+    .btn-primary { background: var(--accent); color: #000; font-weight: 600; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+    .btn-sec { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+
+    /* Meal Sections */
+    .meal-section { margin-top: 12px; }
+    .meal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 8px; }
+    .meal-title { font-weight: 600; text-transform: capitalize; }
+    .meal-macros { font-size: 0.8rem; color: var(--subtext); }
+
+    .food-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.85rem; }
+    .food-info { flex: 1; }
+    .food-sub { font-size: 0.75rem; color: var(--subtext); }
+    .del-btn { background: none; border: none; color: var(--protein); cursor: pointer; font-size: 1rem; padding: 0 6px; }
+
+    /* Weight Log Widget */
+    .weight-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+    /* Modal */
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+    .modal-content { background: var(--card); padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid var(--border); }
+  </style>
 </head>
-<body class="space-y-4">
+<body>
 
-    <!-- Header -->
-    <header class="flex justify-between items-center pt-2">
-        <div>
-            <h1 class="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">MacroPulse AI</h1>
-            <p class="text-xs text-zinc-400" id="current-date">Today</p>
-        </div>
-        <button onclick="openSettings()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-zinc-300 hover:text-white transition">
-            <i class="fa-solid fa-gear"></i>
-        </button>
-    </header>
-
-    <!-- Daily Progress Summary Card -->
-    <section class="glass shadow-xl">
-        <div class="flex justify-between items-center mb-4">
-            <span class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Daily Summary</span>
-            <span class="text-xs text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-800/50" id="cal-remaining">0 kcal left</span>
-        </div>
-
-        <!-- Calories Circular Progress -->
-        <div class="flex items-center justify-around mb-6">
-            <div class="svg-ring-container">
-                <svg width="128" height="128" viewBox="0 0 36 36">
-                    <path stroke="#27272a" stroke-width="3.5" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path id="cal-ring" stroke="#10b981" class="progress-ring" stroke-dasharray="100, 100" stroke-dashoffset="100" stroke-width="3.5" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                </svg>
-                <div class="absolute text-center">
-                    <span class="text-2xl font-extrabold" id="cal-consumed">0</span>
-                    <span class="block text-[10px] uppercase text-zinc-400 font-medium">/ <span id="cal-target">2200</span> kcal</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Macros Breakdown Bars -->
-        <div class="grid grid-cols-3 gap-3 pt-3 border-t border-zinc-800">
-            <!-- Protein -->
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="text-zinc-400 font-medium">Protein</span>
-                    <span class="font-semibold text-rose-400"><span id="p-val">0</span>/<span id="p-target">160</span>g</span>
-                </div>
-                <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="p-bar" class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-            <!-- Carbs -->
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="text-zinc-400 font-medium">Carbs</span>
-                    <span class="font-semibold text-amber-400"><span id="c-val">0</span>/<span id="c-target">220</span>g</span>
-                </div>
-                <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="c-bar" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-            <!-- Fat -->
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="text-zinc-400 font-medium">Fat</span>
-                    <span class="font-semibold text-sky-400"><span id="f-val">0</span>/<span id="f-target">70</span>g</span>
-                </div>
-                <div class="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="f-bar" class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Food Search Bar Section -->
-    <section class="glass">
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Search Food & Meals</label>
-        <form onsubmit="handleSearchSubmit(event)" class="relative flex items-center gap-2">
-            <div class="relative w-full">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs"></i>
-                <input type="text" id="food-search-input" placeholder="e.g. skim milk iced latte, 200g beef mince..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
-            </div>
-            <button type="submit" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shrink-0">
-                Search
-            </button>
-        </form>
-        <!-- Quick Search Pills -->
-        <div class="flex gap-2 mt-2.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
-            <button onclick="quickSearch('Skim milk iced latte')" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg shrink-0 transition">☕ Iced Latte</button>
-            <button onclick="quickSearch('10% fat beef mince 200g cooked')" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg shrink-0 transition">🥩 Beef Mince 200g</button>
-            <button onclick="quickSearch('Chicken breast 200g cooked')" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg shrink-0 transition">🍗 Chicken Breast</button>
-            <button onclick="quickSearch('Sweet potato 250g baked')" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg shrink-0 transition">🍠 Sweet Potato</button>
-        </div>
-    </section>
-
-    <!-- AI Tools Section -->
-    <section class="space-y-3">
-        <!-- Scan / Camera Action -->
-        <div class="glass flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-base shadow-lg shrink-0">
-                    <i class="fa-solid fa-camera"></i>
-                </div>
-                <div>
-                    <h2 class="text-xs font-bold">Log Food with Photo</h2>
-                    <p class="text-[10px] text-zinc-400">Snap a photo + add details</p>
-                </div>
-            </div>
-            <button onclick="triggerFileInput()" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-zinc-950 font-bold text-xs rounded-xl transition shadow-lg shrink-0">
-                Scan Meal
-            </button>
-            <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
-        </div>
-
-        <!-- AI Meal Recommender Button -->
-        <div class="glass flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-base shadow-lg shrink-0">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                </div>
-                <div>
-                    <h2 class="text-xs font-bold">AI Meal Recommender</h2>
-                    <p class="text-[10px] text-zinc-400">Get ideas for remaining macros</p>
-                </div>
-            </div>
-            <button onclick="generateMealIdeas()" class="px-3.5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs rounded-xl transition shadow-lg shrink-0">
-                Suggest
-            </button>
-        </div>
-    </section>
-
-    <!-- Logged Meals Timeline -->
-    <section class="glass">
-        <div class="flex justify-between items-center mb-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Today's Timeline</h3>
-            <button onclick="clearTodayLog()" class="text-xs text-zinc-500 hover:text-rose-400 transition">Reset Log</button>
-        </div>
-        <div id="meal-timeline" class="space-y-2.5">
-            <p class="text-xs text-zinc-500 text-center py-6">No meals logged yet today. Search or scan to start!</p>
-        </div>
-    </section>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'settings-modal')">
-        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-base font-bold">App Settings</h3>
-                <button onclick="closeSettings()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs text-zinc-400 mb-1">Gemini API Key</label>
-                    <input type="password" id="api-key-input" placeholder="Paste key here..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs text-zinc-400 mb-1">Daily Calories</label>
-                        <input type="number" id="target-cal" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-zinc-400 mb-1">Protein (g)</label>
-                        <input type="number" id="target-p" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-zinc-400 mb-1">Carbs (g)</label>
-                        <input type="number" id="target-c" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-zinc-400 mb-1">Fat (g)</label>
-                        <input type="number" id="target-f" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200">
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="saveSettings()" class="w-full py-3 bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs shadow-lg hover:bg-emerald-400 transition">
-                Save & Apply Settings
-            </button>
-        </div>
+  <header>
+    <h1>MacroPulse AI</h1>
+    <div>
+      <button class="btn-sec" onclick="openSettings()">⚙ Settings</button>
     </div>
+  </header>
 
-    <!-- AI Output / Dynamic Modal -->
-    <div id="ai-modal" class="modal-overlay hidden" onclick="handleOverlayClick(event, 'ai-modal')">
-        <div class="glass rounded-3xl p-6 w-full max-w-sm space-y-4 max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-base font-bold" id="ai-modal-title">AI Output</h3>
-                <button onclick="closeAiModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div id="ai-modal-content" class="space-y-3">
-                <!-- Dynamic Content Here -->
-            </div>
-        </div>
+  <!-- Date Navigation -->
+  <div class="card date-nav">
+    <button onclick="changeDate(-1)">&larr; Prev</button>
+    <div style="text-align: center;">
+      <h2 id="displayDate" onclick="document.getElementById('datePicker').showPicker()">Today</h2>
+      <input type="date" id="datePicker" style="display:none;" onchange="onDatePicked(this.value)">
     </div>
+    <button id="nextDateBtn" onclick="changeDate(1)">Next &rarr;</button>
+  </div>
 
-    <!-- JavaScript Application Logic -->
-    <script>
-        const DEFAULT_SETTINGS = { apiKey: '', cal: 2200, p: 160, c: 220, f: 70 };
-        let settings = JSON.parse(localStorage.getItem('mp_settings')) || DEFAULT_SETTINGS;
-        let meals = JSON.parse(localStorage.getItem('mp_meals')) || [];
+  <!-- Daily Summary Dashboard -->
+  <div class="card">
+    <div class="macro-overview">
+      <div class="macro-box">
+        <div class="label">Calories</div>
+        <div class="val" id="calVal">0</div>
+        <div class="label" id="calTargetLabel">/ 2200</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="calBar" style="background: var(--accent);"></div></div>
+      </div>
+      <div class="macro-box">
+        <div class="label">Protein</div>
+        <div class="val" id="pVal" style="color: var(--protein)">0g</div>
+        <div class="label" id="pTargetLabel">/ 180g</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="pBar" style="background: var(--protein);"></div></div>
+      </div>
+      <div class="macro-box">
+        <div class="label">Carbs</div>
+        <div class="val" id="cVal" style="color: var(--carbs)">0g</div>
+        <div class="label" id="cTargetLabel">/ 220g</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="cBar" style="background: var(--carbs);"></div></div>
+      </div>
+      <div class="macro-box">
+        <div class="label">Fat</div>
+        <div class="val" id="fVal" style="color: var(--fat)">0g</div>
+        <div class="label" id="fTargetLabel">/ 70g</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="fBar" style="background: var(--fat);"></div></div>
+      </div>
+    </div>
+  </div>
 
-        document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  <!-- AI Natural Language / Quick Input (MyFitnessPal & MacroFactor inspired) -->
+  <div class="card">
+    <div class="input-group">
+      <input type="text" id="aiInput" placeholder="AI Log: '2 eggs and 100g oats for breakfast'">
+      <button class="btn-primary" onclick="parseAILog()">Log</button>
+    </div>
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
+      <button class="btn-sec" style="flex:1;" onclick="openManualAdd()">+ Manual Add</button>
+      <button class="btn-sec" style="flex:1;" onclick="copyYesterday()">📋 Copy Yesterday</button>
+    </div>
+  </div>
 
-        // Keyboard event for modals
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeSettings();
-                closeAiModal();
-            }
+  <!-- Weight & Trend Widget (MacroFactor inspired) -->
+  <div class="card weight-row">
+    <div>
+      <span style="font-weight: 600;">Body Weight</span>
+      <span id="weightDisplay" style="color: var(--subtext); font-size: 0.85rem; margin-left: 8px;">Not logged today</span>
+    </div>
+    <button class="btn-sec" onclick="logWeight()">Log Weight</button>
+  </div>
+
+  <!-- Meal Groups (Cronometer / MyFitnessPal inspired) -->
+  <div class="card" id="mealLogsContainer">
+    <!-- Populated by JS: Breakfast, Lunch, Dinner, Snacks -->
+  </div>
+
+  <!-- Manual Add Modal -->
+  <div id="manualModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 12px;">Add Food Item</h3>
+      <div class="input-group"><input type="text" id="mName" placeholder="Food Name"></div>
+      <div class="input-group">
+        <select id="mMeal">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snacks">Snacks</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <input type="number" id="mCal" placeholder="Calories (kcal)">
+        <input type="number" id="mP" placeholder="Protein (g)">
+      </div>
+      <div class="input-group">
+        <input type="number" id="mC" placeholder="Carbs (g)">
+        <input type="number" id="mF" placeholder="Fat (g)">
+      </div>
+      <div style="display:flex; justify-content: space-between; margin-top: 12px;">
+        <button class="btn-sec" onclick="closeModal('manualModal')">Cancel</button>
+        <button class="btn-primary" onclick="submitManualAdd()">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 12px;">Settings & Macro Targets</h3>
+      <label class="label">Gemini API Key (for AI Logging)</label>
+      <input type="text" id="cfgApiKey" placeholder="AIZASy..." style="width:100%; margin-bottom: 12px;">
+      
+      <label class="label">Target Calories / Protein (g)</label>
+      <div class="input-group">
+        <input type="number" id="cfgCal" placeholder="2200">
+        <input type="number" id="cfgP" placeholder="180">
+      </div>
+      <label class="label">Target Carbs (g) / Fat (g)</label>
+      <div class="input-group">
+        <input type="number" id="cfgC" placeholder="220">
+        <input type="number" id="cfgF" placeholder="70">
+      </div>
+      
+      <div style="display:flex; justify-content: space-between; margin-top: 16px;">
+        <button class="btn-sec" onclick="closeModal('settingsModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save Targets</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // System Data Model
+    const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    
+    let store = JSON.parse(localStorage.getItem('macropulse_db')) || {
+      targets: { cal: 2200, p: 180, c: 220, f: 70 },
+      apiKey: '',
+      logs: {}
+    };
+
+    function getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    let activeDate = getTodayStr();
+
+    function saveStore() {
+      localStorage.setItem('macropulse_db', JSON.stringify(store));
+    }
+
+    function getDayLog(dateStr) {
+      if (!store.logs[dateStr]) {
+        store.logs[dateStr] = {
+          weight: null,
+          items: { breakfast: [], lunch: [], dinner: [], snacks: [] }
+        };
+        saveStore();
+      }
+      return store.logs[dateStr];
+    }
+
+    // UI Rendering
+    function renderApp() {
+      const today = getTodayStr();
+      const dayData = getDayLog(activeDate);
+
+      // Render Date Navigation Header
+      const dateHeader = document.getElementById('displayDate');
+      if (activeDate === today) {
+        dateHeader.textContent = "Today";
+      } else {
+        dateHeader.textContent = activeDate;
+      }
+      document.getElementById('nextDateBtn').disabled = (activeDate >= today);
+
+      // Render Weight
+      document.getElementById('weightDisplay').textContent = dayData.weight ? `${dayData.weight} kg` : "Not logged today";
+
+      // Calculate Macro Totals
+      let totals = { cal: 0, p: 0, c: 0, f: 0 };
+      MEALS.forEach(m => {
+        (dayData.items[m] || []).forEach(i => {
+          totals.cal += Number(i.cal || 0);
+          totals.p += Number(i.p || 0);
+          totals.c += Number(i.c || 0);
+          totals.f += Number(i.f || 0);
+        });
+      });
+
+      // Update Dashboard
+      const t = store.targets;
+      document.getElementById('calVal').textContent = Math.round(totals.cal);
+      document.getElementById('calTargetLabel').textContent = `/ ${t.cal}`;
+      document.getElementById('calBar').style.width = Math.min(100, (totals.cal / t.cal) * 100) + '%';
+
+      document.getElementById('pVal').textContent = Math.round(totals.p) + 'g';
+      document.getElementById('pTargetLabel').textContent = `/ ${t.p}g`;
+      document.getElementById('pBar').style.width = Math.min(100, (totals.p / t.p) * 100) + '%';
+
+      document.getElementById('cVal').textContent = Math.round(totals.c) + 'g';
+      document.getElementById('cTargetLabel').textContent = `/ ${t.c}g`;
+      document.getElementById('cBar').style.width = Math.min(100, (totals.c / t.c) * 100) + '%';
+
+      document.getElementById('fVal').textContent = Math.round(totals.f) + 'g';
+      document.getElementById('fTargetLabel').textContent = `/ ${t.f}g`;
+      document.getElementById('fBar').style.width = Math.min(100, (totals.f / t.f) * 100) + '%';
+
+      // Render Meals List
+      const container = document.getElementById('mealLogsContainer');
+      container.innerHTML = '';
+
+      MEALS.forEach(meal => {
+        const items = dayData.items[meal] || [];
+        let mCal = items.reduce((acc, x) => acc + Number(x.cal||0), 0);
+        
+        let html = `
+          <div class="meal-section">
+            <div class="meal-header">
+              <span class="meal-title">${meal}</span>
+              <span class="meal-macros">${Math.round(mCal)} kcal</span>
+            </div>
+        `;
+
+        if (items.length === 0) {
+          html += `<div style="font-size: 0.8rem; color: var(--subtext); margin-bottom: 6px;">No entries</div>`;
+        } else {
+          items.forEach((item, idx) => {
+            html += `
+              <div class="food-item">
+                <div class="food-info">
+                  <div><strong>${item.name}</strong></div>
+                  <div class="food-sub">${item.cal} kcal | P: ${item.p}g | C: ${item.c}g | F: ${item.f}g</div>
+                </div>
+                <button class="del-btn" onclick="deleteItem('${meal}', ${idx})">&times;</button>
+              </div>
+            `;
+          });
+        }
+        html += `</div>`;
+        container.innerHTML += html;
+      });
+    }
+
+    // Navigation Controls
+    function changeDate(offset) {
+      const parts = activeDate.split('-');
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() + offset);
+      activeDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      renderApp();
+    }
+
+    function onDatePicked(val) {
+      if (val) {
+        activeDate = val;
+        renderApp();
+      }
+    }
+
+    // Food Logging Logic
+    function addItem(meal, name, cal, p, c, f) {
+      const dayData = getDayLog(activeDate);
+      if (!dayData.items[meal]) dayData.items[meal] = [];
+      dayData.items[meal].push({ name, cal: Number(cal), p: Number(p), c: Number(c), f: Number(f) });
+      saveStore();
+      renderApp();
+    }
+
+    function deleteItem(meal, idx) {
+      const dayData = getDayLog(activeDate);
+      dayData.items[meal].splice(idx, 1);
+      saveStore();
+      renderApp();
+    }
+
+    function copyYesterday() {
+      const parts = activeDate.split('-');
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setDate(d.getDate() - 1);
+      const prevDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      
+      const prevLog = store.logs[prevDateStr];
+      if (!prevLog || !prevLog.items) {
+        alert("No entries found for yesterday!");
+        return;
+      }
+
+      const currentLog = getDayLog(activeDate);
+      currentLog.items = JSON.parse(JSON.stringify(prevLog.items));
+      saveStore();
+      renderApp();
+    }
+
+    function logWeight() {
+      const current = getDayLog(activeDate).weight || "";
+      const val = prompt("Enter body weight in kg:", current);
+      if (val !== null) {
+        getDayLog(activeDate).weight = val ? parseFloat(val) : null;
+        saveStore();
+        renderApp();
+      }
+    }
+
+    // Modal Operations
+    function openManualAdd() { document.getElementById('manualModal').style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    
+    function submitManualAdd() {
+      const name = document.getElementById('mName').value || 'Custom Item';
+      const meal = document.getElementById('mMeal').value;
+      const cal = document.getElementById('mCal').value || 0;
+      const p = document.getElementById('mP').value || 0;
+      const c = document.getElementById('mC').value || 0;
+      const f = document.getElementById('mF').value || 0;
+
+      addItem(meal, name, cal, p, c, f);
+      closeModal('manualModal');
+
+      // Clear Inputs
+      document.getElementById('mName').value = '';
+      document.getElementById('mCal').value = '';
+      document.getElementById('mP').value = '';
+      document.getElementById('mC').value = '';
+      document.getElementById('mF').value = '';
+    }
+
+    function openSettings() {
+      document.getElementById('cfgApiKey').value = store.apiKey || '';
+      document.getElementById('cfgCal').value = store.targets.cal;
+      document.getElementById('cfgP').value = store.targets.p;
+      document.getElementById('cfgC').value = store.targets.c;
+      document.getElementById('cfgF').value = store.targets.f;
+      document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function saveSettings() {
+      store.apiKey = document.getElementById('cfgApiKey').value.trim();
+      store.targets = {
+        cal: Number(document.getElementById('cfgCal').value) || 2200,
+        p: Number(document.getElementById('cfgP').value) || 180,
+        c: Number(document.getElementById('cfgC').value) || 220,
+        f: Number(document.getElementById('cfgF').value) || 70
+      };
+      saveStore();
+      closeModal('settingsModal');
+      renderApp();
+    }
+
+    // Gemini AI Natural Language Processing (via gemini-3.6-flash)
+    async function parseAILog() {
+      const query = document.getElementById('aiInput').value.trim();
+      if (!query) return;
+
+      if (!store.apiKey) {
+        alert("Please set your Gemini API Key in Settings to use AI logging.");
+        openSettings();
+        return;
+      }
+
+      const prompt = `Analyze this food description: "${query}". Return ONLY a JSON object formatted as: {"meal": "breakfast|lunch|dinner|snacks", "name": "Item Name", "cal": 300, "p": 25, "c": 30, "f": 10}.`;
+
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${store.apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
-        function handleOverlayClick(event, modalId) {
-            if (event.target.id === modalId) {
-                if (modalId === 'settings-modal') closeSettings();
-                if (modalId === 'ai-modal') closeAiModal();
-            }
-        }
+        const data = await res.json();
+        const textResp = data.candidates[0].content.parts[0].text;
+        const cleanJson = textResp.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
 
-        function initApp() {
-            updateDashboard();
-            renderTimeline();
-        }
+        addItem(parsed.meal || 'snacks', parsed.name || query, parsed.cal, parsed.p, parsed.c, parsed.f);
+        document.getElementById('aiInput').value = '';
+      } catch (err) {
+        alert("Failed to parse meal via AI. Please check your API key.");
+      }
+    }
 
-        function updateDashboard() {
-            const consumed = meals.reduce((acc, m) => ({
-                cal: acc.cal + m.cal,
-                p: acc.p + m.p,
-                c: acc.c + m.c,
-                f: acc.f + m.f
-            }), { cal: 0, p: 0, c: 0, f: 0 });
+    // Auto-reset check when foregrounded
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        renderApp();
+      }
+    });
 
-            document.getElementById('cal-consumed').innerText = consumed.cal;
-            document.getElementById('cal-target').innerText = settings.cal;
-            
-            const remCal = Math.max(0, settings.cal - consumed.cal);
-            document.getElementById('cal-remaining').innerText = `${remCal} kcal left`;
-
-            const percentCal = settings.cal > 0 ? Math.min(100, Math.round((consumed.cal / settings.cal) * 100)) : 0;
-            document.getElementById('cal-ring').setAttribute('stroke-dashoffset', 100 - percentCal);
-
-            // Macros
-            document.getElementById('p-val').innerText = consumed.p;
-            document.getElementById('p-target').innerText = settings.p;
-            document.getElementById('p-bar').style.width = `${settings.p > 0 ? Math.min(100, (consumed.p / settings.p) * 100) : 0}%`;
-
-            document.getElementById('c-val').innerText = consumed.c;
-            document.getElementById('c-target').innerText = settings.c;
-            document.getElementById('c-bar').style.width = `${settings.c > 0 ? Math.min(100, (consumed.c / settings.c) * 100) : 0}%`;
-
-            document.getElementById('f-val').innerText = consumed.f;
-            document.getElementById('f-target').innerText = settings.f;
-            document.getElementById('f-bar').style.width = `${settings.f > 0 ? Math.min(100, (consumed.f / settings.f) * 100) : 0}%`;
-        }
-
-        function renderTimeline() {
-            const container = document.getElementById('meal-timeline');
-            if (meals.length === 0) {
-                container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-6">No meals logged yet today. Search or scan to start!</p>';
-                return;
-            }
-
-            container.innerHTML = meals.map((m, index) => `
-                <div class="flex items-center justify-between p-3 bg-zinc-900/60 rounded-2xl border border-zinc-800">
-                    <div>
-                        <h4 class="text-xs font-bold text-zinc-200">${escapeHtml(m.name)}</h4>
-                        <p class="text-[10px] text-zinc-400 mt-0.5">
-                            <span class="text-rose-400">${m.p}g P</span> • 
-                            <span class="text-amber-400">${m.c}g C</span> • 
-                            <span class="text-sky-400">${m.f}g F</span>
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-emerald-400">${m.cal} kcal</span>
-                        <button onclick="deleteMeal(${index})" class="text-zinc-600 hover:text-rose-400 text-xs"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        /* --- Gemini API Call Wrapper --- */
-        async function callGeminiApi(prompt, base64Image = null, mimeType = "image/jpeg") {
-            const models = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-            let errorLog = [];
-
-            for (const model of models) {
-                try {
-                    const parts = [{ text: prompt }];
-                    if (base64Image) {
-                        parts.push({
-                            inline_data: { mime_type: mimeType, data: base64Image }
-                        });
-                    }
-
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts }],
-                            generationConfig: { response_mime_type: "application/json" }
-                        })
-                    });
-
-                    const data = await res.json();
-                    if (data.error) throw new Error(`[${model}] ${data.error.message}`);
-
-                    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                        throw new Error(`[${model}] No content returned from API.`);
-                    }
-
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    
-                    // JSON extraction matcher
-                    const jsonMatch = rawText.match(/[\{\[][\s\S]*[\}\]]/);
-                    if (jsonMatch) {
-                        rawText = jsonMatch[0];
-                    }
-
-                    return JSON.parse(rawText);
-                } catch (err) {
-                    console.warn(`Model ${model} failed:`, err.message);
-                    errorLog.push(err.message);
-                }
-            }
-
-            throw new Error(`API Call Failed. Details: ${errorLog.join(' | ')}`);
-        }
-
-        /* --- Food Search Feature --- */
-        function handleSearchSubmit(e) {
-            e.preventDefault();
-            const query = document.getElementById('food-search-input').value;
-            searchFood(query);
-        }
-
-        function quickSearch(query) {
-            document.getElementById('food-search-input').value = query;
-            searchFood(query);
-        }
-
-        async function searchFood(query) {
-            if (!query || !query.trim()) return;
-            if (!settings.apiKey) {
-                alert('Please enter your Gemini API key in Settings first!');
-                openSettings();
-                return;
-            }
-
-            openAiModal('Searching Food Database...', `
-                <div class="text-center py-8">
-                    <i class="fa-solid fa-magnifying-glass fa-spin text-2xl text-emerald-400"></i>
-                    <p class="text-xs text-zinc-400 mt-2">Looking up nutritional data for "${escapeHtml(query)}"...</p>
-                </div>
-            `);
-
-            const prompt = `You are a strict nutritional calculation API. Provide accurate nutritional values for: "${query}".
-            Return 2 to 3 accurate serving variations or common serving sizes.
-            Respond strictly in valid JSON using this exact structure:
-            {
-              "results": [
-                {
-                  "name": "Food or Meal Item Name",
-                  "serving": "e.g. 1 cup (250ml) or 200g cooked",
-                  "cal": 250,
-                  "p": 30,
-                  "c": 5,
-                  "f": 12,
-                  "description": "Brief description of preparation/portion"
-                }
-              ]
-            }`;
-
-            try {
-                const data = await callGeminiApi(prompt);
-                if (!data || !data.results || data.results.length === 0) {
-                    openAiModal('No Results', '<p class="text-xs text-zinc-400 py-4 text-center">No nutritional data found for this item.</p>');
-                    return;
-                }
-
-                window.currentSearchResults = data.results;
-
-                const html = data.results.map((item, idx) => `
-                    <div class="p-3 bg-zinc-900/80 rounded-2xl border border-zinc-800 space-y-2">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="text-xs font-bold text-emerald-300">${escapeHtml(item.name)}</h4>
-                                <span class="text-[10px] text-zinc-400">${escapeHtml(item.serving || '')}</span>
-                            </div>
-                            <span class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40">${item.cal} kcal</span>
-                        </div>
-                        ${item.description ? `<p class="text-[11px] text-zinc-400">${escapeHtml(item.description)}</p>` : ''}
-                        <div class="flex justify-between items-center pt-1 border-t border-zinc-800 text-[10px]">
-                            <span class="text-zinc-300">
-                                <strong class="text-rose-400">${item.p}g</strong> P • 
-                                <strong class="text-amber-400">${item.c}g</strong> C • 
-                                <strong class="text-sky-400">${item.f}g</strong> F
-                            </span>
-                            <button onclick="logSearchResultByIndex(${idx})" class="px-3 py-1 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg transition">
-                                + Log
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-
-                openAiModal(`Results for "${escapeHtml(query)}"`, `<div class="space-y-3">${html}</div>`);
-            } catch (err) {
-                openAiModal('Error', `<p class="text-xs text-rose-400">${escapeHtml(err.message || 'Failed to search food items.')}</p>`);
-            }
-        }
-
-        function logSearchResultByIndex(idx) {
-            if (window.currentSearchResults && window.currentSearchResults[idx]) {
-                const item = window.currentSearchResults[idx];
-                meals.push({
-                    name: item.name,
-                    cal: parseInt(item.cal) || 0,
-                    p: parseInt(item.p) || 0,
-                    c: parseInt(item.c) || 0,
-                    f: parseInt(item.f) || 0
-                });
-                localStorage.setItem('mp_meals', JSON.stringify(meals));
-                initApp();
-                closeAiModal();
-            }
-        }
-
-        /* --- Photo Scanning Feature --- */
-        function triggerFileInput() {
-            if (!settings.apiKey) {
-                alert('Please enter your Gemini API key in Settings first!');
-                openSettings();
-                return;
-            }
-            document.getElementById('image-input').click();
-        }
-
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const fullDataUrl = e.target.result;
-                window.pendingImageBase64 = fullDataUrl.split(',')[1];
-                window.pendingMimeType = fullDataUrl.split(';')[0].replace('data:', '') || 'image/jpeg';
-                window.pendingImagePreview = fullDataUrl;
-
-                openAiModal('Add Photo Context', `
-                    <div class="space-y-3">
-                        <div class="w-full h-40 bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 flex items-center justify-center">
-                            <img src="${window.pendingImagePreview}" class="h-full w-full object-cover">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-300 mb-1">Additional Details (Optional)</label>
-                            <input type="text" id="scan-notes-input" placeholder="e.g. skim milk, sourdough, cooked in butter..." class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500">
-                        </div>
-                        <button onclick="processImageWithNotes()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl text-xs shadow-lg transition">
-                            Analyze Meal
-                        </button>
-                    </div>
-                `);
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
-
-        async function processImageWithNotes() {
-            const notes = document.getElementById('scan-notes-input') ? document.getElementById('scan-notes-input').value.trim() : '';
-            const base64Data = window.pendingImageBase64;
-            const mimeType = window.pendingMimeType || 'image/jpeg';
-            if (!base64Data) return;
-
-            openAiModal('Analyzing Meal...', '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i><p class="text-xs text-zinc-400 mt-2">Gemini Vision is estimating macros...</p></div>');
-
-            try {
-                let prompt = `Analyze this meal photo. Output strictly valid JSON matching this exact structure:
-                {
-                  "name": "Brief Meal Name",
-                  "cal": 500,
-                  "p": 35,
-                  "c": 45,
-                  "f": 15,
-                  "description": "Short overview of identified items"
-                }`;
-
-                if (notes) {
-                    prompt += `\n\nUSER SPECIFIED DETAILS TO INCLUDE: "${notes}".`;
-                }
-
-                const result = await callGeminiApi(prompt, base64Data, mimeType);
-                showScanResults(result);
-            } catch (err) {
-                openAiModal('Error', `<p class="text-xs text-rose-400">${escapeHtml(err.message || 'Failed to analyze image.')}</p>`);
-            }
-        }
-
-        function showScanResults(meal) {
-            const html = `
-                <div class="space-y-3">
-                    <input type="text" id="edit-meal-name" value="${escapeHtml(meal.name || 'Meal')}" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-xs font-bold text-zinc-100">
-                    <p class="text-[11px] text-zinc-400">${escapeHtml(meal.description || '')}</p>
-                    <div class="grid grid-cols-4 gap-2 text-center">
-                        <div class="bg-zinc-900 p-2 rounded-xl">
-                            <span class="block text-[10px] text-zinc-400">Calories</span>
-                            <input type="number" id="edit-meal-cal" value="${meal.cal || 0}" class="w-full text-center bg-transparent text-xs font-bold text-emerald-400">
-                        </div>
-                        <div class="bg-zinc-900 p-2 rounded-xl">
-                            <span class="block text-[10px] text-zinc-400">Protein</span>
-                            <input type="number" id="edit-meal-p" value="${meal.p || 0}" class="w-full text-center bg-transparent text-xs font-bold text-rose-400">
-                        </div>
-                        <div class="bg-zinc-900 p-2 rounded-xl">
-                            <span class="block text-[10px] text-zinc-400">Carbs</span>
-                            <input type="number" id="edit-meal-c" value="${meal.c || 0}" class="w-full text-center bg-transparent text-xs font-bold text-amber-400">
-                        </div>
-                        <div class="bg-zinc-900 p-2 rounded-xl">
-                            <span class="block text-[10px] text-zinc-400">Fat</span>
-                            <input type="number" id="edit-meal-f" value="${meal.f || 0}" class="w-full text-center bg-transparent text-xs font-bold text-sky-400">
-                        </div>
-                    </div>
-                    <button onclick="confirmLogMeal()" class="w-full py-3 bg-emerald-500 text-zinc-950 font-bold rounded-xl text-xs mt-2 shadow-lg">Log This Meal</button>
-                </div>
-            `;
-            openAiModal('Confirm Meal Details', html);
-        }
-
-        function confirmLogMeal() {
-            const newMeal = {
-                name: document.getElementById('edit-meal-name').value || 'Meal',
-                cal: parseInt(document.getElementById('edit-meal-cal').value) || 0,
-                p: parseInt(document.getElementById('edit-meal-p').value) || 0,
-                c: parseInt(document.getElementById('edit-meal-c').value) || 0,
-                f: parseInt(document.getElementById('edit-meal-f').value) || 0
-            };
-            meals.push(newMeal);
-            localStorage.setItem('mp_meals', JSON.stringify(meals));
-            initApp();
-            closeAiModal();
-        }
-
-        /* --- Meal Ideas Recommender Feature --- */
-        async function generateMealIdeas() {
-            if (!settings.apiKey) {
-                alert('Please enter your Gemini API key in Settings first!');
-                openSettings();
-                return;
-            }
-
-            const consumed = meals.reduce((acc, m) => ({ cal: acc.cal + m.cal, p: acc.p + m.p, c: acc.c + m.c, f: acc.f + m.f }), { cal: 0, p: 0, c: 0, f: 0 });
-            const rem = {
-                cal: Math.max(0, settings.cal - consumed.cal),
-                p: Math.max(0, settings.p - consumed.p),
-                c: Math.max(0, settings.c - consumed.c),
-                f: Math.max(0, settings.f - consumed.f)
-            };
-
-            openAiModal('Generating Suggestions...', '<div class="text-center py-8"><i class="fa-solid fa-wand-magic-sparkles fa-spin text-2xl text-indigo-400"></i><p class="text-xs text-zinc-400 mt-2">Calculating meals for remaining macros...</p></div>');
-
-            const prompt = `Suggest 2 realistic meal options to fit these remaining daily macros: Calories: ${rem.cal}, Protein: ${rem.p}g, Carbs: ${rem.c}g, Fat: ${rem.f}g.
-            Return strictly valid JSON using format:
-            {
-              "suggestions": [
-                { "name": "Meal Name", "cal": 400, "p": 30, "c": 40, "f": 10, "prep": "10 mins", "ingredients": "Item 1, Item 2" }
-              ]
-            }`;
-
-            try {
-                const result = await callGeminiApi(prompt);
-                window.currentSuggestions = result.suggestions;
-
-                const html = result.suggestions.map((s, idx) => `
-                    <div class="p-3 bg-zinc-900/80 rounded-2xl border border-zinc-800 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-xs font-bold text-indigo-300">${escapeHtml(s.name)}</h4>
-                            <span class="text-[10px] text-zinc-500">${escapeHtml(s.prep)}</span>
-                        </div>
-                        <p class="text-[11px] text-zinc-400">${escapeHtml(s.ingredients)}</p>
-                        <div class="flex justify-between items-center pt-1 border-t border-zinc-800 text-[10px]">
-                            <span class="text-emerald-400 font-bold">${s.cal} kcal</span>
-                            <span class="text-zinc-400">${s.p}g P / ${s.c}g C / ${s.f}g F</span>
-                            <button onclick="logSuggestedMealByIndex(${idx})" class="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 rounded-lg hover:bg-indigo-500/40">Log</button>
-                        </div>
-                    </div>
-                `).join('');
-
-                openAiModal('Tailored Meal Suggestions', `<div class="space-y-3">${html}</div>`);
-            } catch (err) {
-                openAiModal('Error', `<p class="text-xs text-rose-400">${escapeHtml(err.message || 'Failed to generate suggestions.')}</p>`);
-            }
-        }
-
-        function logSuggestedMealByIndex(idx) {
-            if (window.currentSuggestions && window.currentSuggestions[idx]) {
-                const s = window.currentSuggestions[idx];
-                meals.push({ name: s.name, cal: s.cal, p: s.p, c: s.c, f: s.f });
-                localStorage.setItem('mp_meals', JSON.stringify(meals));
-                initApp();
-                closeAiModal();
-            }
-        }
-
-        /* --- Helper Functions --- */
-        function deleteMeal(index) {
-            meals.splice(index, 1);
-            localStorage.setItem('mp_meals', JSON.stringify(meals));
-            initApp();
-        }
-
-        function clearTodayLog() {
-            if (confirm('Are you sure you want to clear today\'s logged meals?')) {
-                meals = [];
-                localStorage.setItem('mp_meals', JSON.stringify(meals));
-                initApp();
-            }
-        }
-
-        function openSettings() {
-            document.getElementById('api-key-input').value = settings.apiKey || '';
-            document.getElementById('target-cal').value = settings.cal;
-            document.getElementById('target-p').value = settings.p;
-            document.getElementById('target-c').value = settings.c;
-            document.getElementById('target-f').value = settings.f;
-            document.getElementById('settings-modal').classList.remove('hidden');
-        }
-
-        function closeSettings() {
-            document.getElementById('settings-modal').classList.add('hidden');
-        }
-
-        function saveSettings() {
-            settings.apiKey = document.getElementById('api-key-input').value.trim();
-            settings.cal = parseInt(document.getElementById('target-cal').value) || 2200;
-            settings.p = parseInt(document.getElementById('target-p').value) || 160;
-            settings.c = parseInt(document.getElementById('target-c').value) || 220;
-            settings.f = parseInt(document.getElementById('target-f').value) || 70;
-            localStorage.setItem('mp_settings', JSON.stringify(settings));
-            closeSettings();
-            initApp();
-        }
-
-        function openAiModal(title, htmlContent) {
-            document.getElementById('ai-modal-title').innerText = title;
-            document.getElementById('ai-modal-content').innerHTML = htmlContent;
-            document.getElementById('ai-modal').classList.remove('hidden');
-        }
-
-        function closeAiModal() {
-            document.getElementById('ai-modal').classList.add('hidden');
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        initApp();
-    </script>
+    // Startup
+    window.onload = () => renderApp();
+  </script>
 </body>
 </html>
