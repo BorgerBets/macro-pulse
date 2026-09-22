@@ -62,8 +62,10 @@
     .weight-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 
     /* Modal */
-    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
+    .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 100; }
     .modal-content { background: var(--card); padding: 20px; border-radius: 12px; max-width: 400px; width: 90%; border: 1px solid var(--border); }
+    
+    .loading-overlay { display: none; color: var(--accent); font-weight: bold; text-align: center; margin-top: 8px; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -115,19 +117,23 @@
     </div>
   </div>
 
-  <!-- AI Natural Language / Quick Input (MyFitnessPal & MacroFactor inspired) -->
+  <!-- AI Text & Photo Scan Inputs -->
   <div class="card">
     <div class="input-group">
       <input type="text" id="aiInput" placeholder="AI Log: '2 eggs and 100g oats for breakfast'">
       <button class="btn-primary" onclick="parseAILog()">Log</button>
     </div>
     <div style="display: flex; gap: 8px; margin-top: 8px;">
-      <button class="btn-sec" style="flex:1;" onclick="openManualAdd()">+ Manual Add</button>
-      <button class="btn-sec" style="flex:1;" onclick="copyYesterday()">📋 Copy Yesterday</button>
+      <button class="btn-sec" style="flex:1;" onclick="triggerPhotoUpload()">📷 Photo Scan</button>
+      <button class="btn-sec" style="flex:1;" onclick="openManualAdd()">+ Manual</button>
+      <button class="btn-sec" style="flex:1;" onclick="copyYesterday()">📋 Copy Prev</button>
     </div>
+    <!-- Hidden input triggering native camera or gallery picker -->
+    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoUpload(event)">
+    <div id="aiStatus" class="loading-overlay">Analyzing meal with Gemini AI...</div>
   </div>
 
-  <!-- Weight & Trend Widget (MacroFactor inspired) -->
+  <!-- Weight & Trend Widget -->
   <div class="card weight-row">
     <div>
       <span style="font-weight: 600;">Body Weight</span>
@@ -136,9 +142,9 @@
     <button class="btn-sec" onclick="logWeight()">Log Weight</button>
   </div>
 
-  <!-- Meal Groups (Cronometer / MyFitnessPal inspired) -->
+  <!-- Meal Groups -->
   <div class="card" id="mealLogsContainer">
-    <!-- Populated by JS: Breakfast, Lunch, Dinner, Snacks -->
+    <!-- Populated by JS -->
   </div>
 
   <!-- Manual Add Modal -->
@@ -173,7 +179,7 @@
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <h3 style="margin-bottom: 12px;">Settings & Macro Targets</h3>
-      <label class="label">Gemini API Key (for AI Logging)</label>
+      <label class="label">Gemini API Key (for AI & Photo Scanning)</label>
       <input type="text" id="cfgApiKey" placeholder="AIZASy..." style="width:100%; margin-bottom: 12px;">
       
       <label class="label">Target Calories / Protein (g)</label>
@@ -195,7 +201,6 @@
   </div>
 
   <script>
-    // System Data Model
     const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
     
     let store = JSON.parse(localStorage.getItem('macropulse_db')) || {
@@ -231,7 +236,6 @@
       const today = getTodayStr();
       const dayData = getDayLog(activeDate);
 
-      // Render Date Navigation Header
       const dateHeader = document.getElementById('displayDate');
       if (activeDate === today) {
         dateHeader.textContent = "Today";
@@ -240,10 +244,8 @@
       }
       document.getElementById('nextDateBtn').disabled = (activeDate >= today);
 
-      // Render Weight
       document.getElementById('weightDisplay').textContent = dayData.weight ? `${dayData.weight} kg` : "Not logged today";
 
-      // Calculate Macro Totals
       let totals = { cal: 0, p: 0, c: 0, f: 0 };
       MEALS.forEach(m => {
         (dayData.items[m] || []).forEach(i => {
@@ -254,7 +256,6 @@
         });
       });
 
-      // Update Dashboard
       const t = store.targets;
       document.getElementById('calVal').textContent = Math.round(totals.cal);
       document.getElementById('calTargetLabel').textContent = `/ ${t.cal}`;
@@ -272,7 +273,6 @@
       document.getElementById('fTargetLabel').textContent = `/ ${t.f}g`;
       document.getElementById('fBar').style.width = Math.min(100, (totals.f / t.f) * 100) + '%';
 
-      // Render Meals List
       const container = document.getElementById('mealLogsContainer');
       container.innerHTML = '';
 
@@ -308,7 +308,7 @@
       });
     }
 
-    // Navigation Controls
+    // Date Navigation
     function changeDate(offset) {
       const parts = activeDate.split('-');
       const d = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -368,7 +368,7 @@
       }
     }
 
-    // Modal Operations
+    // Modals
     function openManualAdd() { document.getElementById('manualModal').style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     
@@ -383,7 +383,6 @@
       addItem(meal, name, cal, p, c, f);
       closeModal('manualModal');
 
-      // Clear Inputs
       document.getElementById('mName').value = '';
       document.getElementById('mCal').value = '';
       document.getElementById('mP').value = '';
@@ -413,17 +412,24 @@
       renderApp();
     }
 
-    // Gemini AI Natural Language Processing (via gemini-3.6-flash)
+    function setStatus(show, msg = "Analyzing meal with Gemini AI...") {
+      const el = document.getElementById('aiStatus');
+      el.textContent = msg;
+      el.style.display = show ? 'block' : 'none';
+    }
+
+    // Gemini AI Text Parsing
     async function parseAILog() {
       const query = document.getElementById('aiInput').value.trim();
       if (!query) return;
 
       if (!store.apiKey) {
-        alert("Please set your Gemini API Key in Settings to use AI logging.");
+        alert("Please set your Gemini API Key in Settings to use AI features.");
         openSettings();
         return;
       }
 
+      setStatus(true, "Analyzing text description...");
       const prompt = `Analyze this food description: "${query}". Return ONLY a JSON object formatted as: {"meal": "breakfast|lunch|dinner|snacks", "name": "Item Name", "cal": 300, "p": 25, "c": 30, "f": 10}.`;
 
       try {
@@ -441,18 +447,72 @@
         addItem(parsed.meal || 'snacks', parsed.name || query, parsed.cal, parsed.p, parsed.c, parsed.f);
         document.getElementById('aiInput').value = '';
       } catch (err) {
-        alert("Failed to parse meal via AI. Please check your API key.");
+        alert("Failed to parse text via AI. Check your API key.");
+      } finally {
+        setStatus(false);
       }
     }
 
-    // Auto-reset check when foregrounded
+    // Gemini AI Multimodal Photo Scanning
+    function triggerPhotoUpload() {
+      if (!store.apiKey) {
+        alert("Please set your Gemini API Key in Settings to use Photo Scan.");
+        openSettings();
+        return;
+      }
+      document.getElementById('photoInput').click();
+    }
+
+    async function handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      setStatus(true, "Scanning food photo with Gemini AI...");
+
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const base64Data = reader.result.split(',')[1];
+        const mimeType = file.type || 'image/jpeg';
+
+        const prompt = 'Analyze this meal photo. Identify the food, estimate portion sizes, and estimate calories and macros (protein, carbs, fat). Return ONLY a JSON object formatted as: {"meal": "breakfast|lunch|dinner|snacks", "name": "Item Name", "cal": 300, "p": 25, "c": 30, "f": 10}.';
+
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${store.apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { inline_data: { mime_type: mimeType, data: base64Data } },
+                  { text: prompt }
+                ]
+              }]
+            })
+          });
+
+          const data = await res.json();
+          const textResp = data.candidates[0].content.parts[0].text;
+          const cleanJson = textResp.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+
+          addItem(parsed.meal || 'snacks', parsed.name || "Scanned Meal", parsed.cal, parsed.p, parsed.c, parsed.f);
+        } catch (err) {
+          alert("Failed to analyze image with AI. Check your API key or image format.");
+        } finally {
+          setStatus(false);
+          event.target.value = '';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Auto-refresh when returning to tab
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         renderApp();
       }
     });
 
-    // Startup
     window.onload = () => renderApp();
   </script>
 </body>
